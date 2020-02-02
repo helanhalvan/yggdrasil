@@ -3,14 +3,8 @@ defmodule Equals do
     fn p -> do_propagate(p, x) end
   end
 
-  defp do_propagate(p, [_h]) do
-    {:done, p}
-  end
-
-  defp do_propagate(p, []) do
-    {:done, p}
-  end
-
+  defp do_propagate(p, [_h]), do: {:done, p}
+  defp do_propagate(p, []), do: {:done, p}
   defp do_propagate(p, lnames) do
     lvars =
       for i <- lnames do
