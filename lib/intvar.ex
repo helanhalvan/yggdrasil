@@ -8,10 +8,8 @@ defmodule Intvar do
   def interval({:intvar, :true, v}), do: {v, v}
   def interval({:intvar, :false, v}), do: v
   def isin({:intvar, :true, v}, v), do: :true
-  def isin({:intvar, :false, {min, max}}, v) when min < v and v < max do
+  def isin({:intvar, :false, {min, max}}, v) when min <= v and v <= max do
     :true
   end
-  def isin(_, _) do
-    false
-  end
+  def isin(_, _), do: false
 end

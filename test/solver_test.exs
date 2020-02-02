@@ -4,8 +4,8 @@ defmodule SolverTest do
 
   test "equals problem" do
     p = Problem.new()
-    x = Intvar.new(5)
-    y = Intvar.new(1, 10)
+    x = Intvar.new(1, 5)
+    y = Intvar.new(5, 10)
     {p, xn} = Problem.register_var(p, x)
     {p, yn} = Problem.register_var(p, y)
     c = Equals.new([xn, yn])

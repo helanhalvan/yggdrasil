@@ -29,6 +29,7 @@ defmodule Equals do
     end
   end
 
+  defp fixed_value([]), do: :undef
   defp fixed_value([h | t]) do
     case Intvar.value_if_fixed(h) do
       :undef -> fixed_value(t)
