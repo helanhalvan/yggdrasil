@@ -1,6 +1,6 @@
 defmodule Problem do
   def new do
-    %{:vars => %{}, :varc => 0, :const => []}
+    %{:vars => %{}, :varc => 0, :varu => %{}, :varuc => 0, :const => []}
   end
 
   def register_var(p = %{:vars => v, :varc => c}, n) do
@@ -11,20 +11,24 @@ defmodule Problem do
     %{p | :const => [n | l]}
   end
 
-  def solve(%{:vars => v, :const => c}), do: do_solve(v, c)
+  def solve(p = %{:const => c}), do: do_solve(p, c)
 
   def do_solve(v, c) do
     case propagate(c, v, []) do
       :failed ->
         :failed
 
-      {v, c} ->
-        case Enum.all?(v, fn {_key, value} -> Intvar.is_fixed(value) end) do
+      {p, c} ->
+        v = :maps.get(:vars, p)
+        case Enum.all?(v, fn
+          {_key, {:unified, 0}} -> true
+          {_key, value} -> Intvar.is_fixed(value) end) do
           true ->
-            solution(v)
+            solution(p)
 
           false ->
             {v1, v2} = split(v)
+
             case do_solve(v1, c) do
               :failed -> do_solve(v2, c)
               s -> s
@@ -33,9 +37,10 @@ defmodule Problem do
     end
   end
 
-  defp split(vars) do
+  defp split(p = %{:vars => vars}) do
     vlist = :maps.to_list(vars)
-    do_split(vlist, vars)
+    {a, b} = do_split(vlist, vars)
+    {%{p | :vars => a}, %{p | :vars => b}}
   end
 
   defp do_split([{name, var} | t], vars) do
@@ -49,8 +54,12 @@ defmodule Problem do
     end
   end
 
-  defp solution(v) do
-    :maps.map(fn _key, value -> Intvar.value_if_fixed(value) end, v)
+  defp solution(p) do
+    vars = :maps.get(:vars, p)
+    varu = :maps.get(:varu, p)
+    :maps.map(fn
+      _key, {:unified, a} -> :maps.get(a, varu)
+      _key, value -> Intvar.value_if_fixed(value) end, vars)
   end
 
   def propagate([h | t], v, d) do
@@ -65,11 +74,28 @@ defmodule Problem do
     {v, d}
   end
 
-  def getvar(v, n) do
-    Map.get(v, n)
+  def getvar(%{:vars => v, :varu => u}, n) do
+    case :maps.get(n, v) do
+      {:unified, uname} -> :maps.get(uname, u)
+      v -> v
+    end
   end
 
   def setvars(v, new) do
     Map.merge(v, new)
+  end
+
+  # This function does not attempt to GC unused variables in varu
+  # the amount of garbage is at most size(vars) at the start of solving anyway
+  # should be fine
+  def unifyto(p = %{:vars => vars, :varu => varu, :varuc => n}, names, new) do
+    pointer = {:unified, n}
+    vars1 = set_lots(vars, names, pointer)
+    %{p | :vars => vars1, :varu => Map.put(varu, n, new), :varuc => n + 1}
+  end
+
+  defp set_lots(map, [], _), do: map
+  defp set_lots(map, [h|t], v) do
+    set_lots(%{map | h => v}, t, v)
   end
 end
