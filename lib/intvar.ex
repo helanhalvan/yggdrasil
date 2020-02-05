@@ -17,11 +17,11 @@ defmodule Intvar do
   end
 
   def unify({:intvar, false, {min, max1}}, {:intvar, false, {min, max2}}) do
-    {:intvar, false, {min, min(max1, max2)}}
+    new(min, min(max1, max2))
   end
 
   def unify({:intvar, false, {min1, max}}, {:intvar, false, {min2, max}}) do
-    {:intvar, false, {max(min1, min2), max}}
+    new(max(min1, min2), max)
   end
 
   def unify({:intvar, false, {min, _}}, {:intvar, false, {_, max}}) when min > max do
@@ -33,7 +33,7 @@ defmodule Intvar do
   end
 
   def unify({:intvar, false, {min1, max1}}, {:intvar, false, {min2, max2}}) do
-    {:intvar, false, {max(min1, min2), min(max1, max2)}}
+    new(max(min1, min2), min(max1, max2))
   end
 
   def is_fixed({:intvar, b, _}), do: b

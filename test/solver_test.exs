@@ -5,11 +5,13 @@ defmodule SolverTest do
   test "equals problem" do
     p = Problem.new()
     x = Intvar.new(1, 5)
-    y = Intvar.new(5, 10)
+    y = Intvar.new(1, 10)
+    z = Intvar.new(5, 10)
     {p, xn} = Problem.register_var(p, x)
     {p, yn} = Problem.register_var(p, y)
-    c = Equals.new([xn, yn])
+    {p, zn} = Problem.register_var(p, z)
+    c = Equals.new([xn, yn, zn])
     p = Problem.register_const(p, c)
-    %{ ^xn => 5, ^yn => 5} = Problem.solve(p)
+    {:done, %{ ^xn => 5, ^yn => 5, ^zn => 5}} = Solution_runner.all_lazy(p)
   end
 end
