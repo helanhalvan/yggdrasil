@@ -1,4 +1,6 @@
 defmodule Equals do
+  @type variable :: tuple() # from var.ex
+  @spec new([variable()]) :: (any -> :failed | {:done, any})
   def new(x) do
     fn p -> do_propagate(p, x) end
   end
@@ -25,7 +27,7 @@ defmodule Equals do
   defp do_unify(o, []), do: o
 
   defp do_unify(o, [h | t]) do
-    case Intvar.unify(o, h) do
+    case Var.unify(o, h) do
       :failed -> :failed
       v -> do_unify(v, t)
     end
