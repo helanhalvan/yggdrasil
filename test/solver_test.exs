@@ -14,4 +14,18 @@ defmodule SolverTest do
     p = Problem.register_const(p, c)
     {:done, %{ ^xn => 5, ^yn => 5, ^zn => 5}} = Solution_runner.all_lazy(p)
   end
+  test "equals problem with many solutions" do
+    p = Problem.new()
+    x = Intvar.new(1, 8)
+    y = Intvar.new(1, 10)
+    z = Intvar.new(5, 10)
+    {p, xn} = Problem.register_var(p, x)
+    {p, yn} = Problem.register_var(p, y)
+    {p, zn} = Problem.register_var(p, z)
+    c = Equals.new([xn, yn, zn])
+    p = Problem.register_const(p, c)
+    {s1, f} = Solution_runner.all_lazy(p)
+    {s2, f} = apply(f, [])
+    {:done, s3} = apply(f, [])
+  end
 end

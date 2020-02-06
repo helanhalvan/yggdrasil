@@ -20,7 +20,7 @@ defmodule Equals_simple do
         case Enum.all?(lvars, fn i -> Intvar.isin(i, v) end) do
           true ->
             vs = for key <- lnames, into: %{}, do: {key, Intvar.new(v)}
-            p = Problem.setvars(p, vs)
+            p = Problem.set_vars(p, vs)
             {:done, p}
 
           false ->

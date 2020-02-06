@@ -1,6 +1,8 @@
 defmodule Solution_runner do
   def all_lazy(p) do
     case Problem.propagate(p) do
+      :no_constraints ->
+        :todo
       :failed ->
         :failed
 
@@ -17,20 +19,22 @@ defmodule Solution_runner do
     end
   end
 
-  defp split(p = %{:vars => vars}) do
-    vlist = :maps.to_list(vars)
-    {a, b} = do_split(vlist, vars)
+  defp split(p) do
+    {p, vlist} = Problem.get_vars(p)
+    {a, b} = do_split(vlist, p)
     {%{p | :vars => a}, %{p | :vars => b}}
   end
 
-  defp do_split([{name, var} | t], vars) do
+  defp do_split([{name, var} | t], p) do
     case Intvar.is_fixed(var) do
       true ->
-        do_split(t, vars)
+        do_split(t, p)
 
       false ->
         {min, max} = Intvar.interval(var)
-        {%{vars | name => Intvar.new(min)}, %{vars | name => Intvar.new(min + 1, max)}}
+        p1 = Problem.set_var(p, name, Intvar.new(min))
+        p2 = Problem.set_var(p, name, Intvar.new(min + 1, max))
+        {p1, p2}
     end
   end
 

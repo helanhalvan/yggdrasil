@@ -12,6 +12,7 @@ defmodule Problem do
     %{p | :const => [n | l]}
   end
 
+  def propagate(%{:const => []}), do: :no_constraints
   def propagate(p = %{:const => c}), do: do_propagate(p, c)
 
   defp do_propagate(v, c) do
@@ -50,10 +51,29 @@ defmodule Problem do
     end
   end
 
-  def setvars(v, new) do
-    Map.merge(v, new)
+  def get_vars(p = %{:vars => v, :varu => u}) do
+     vlist = Map.to_list(v)
+     :io.format("~p", [p])
+     {_dead, v} = do_get_vars(vlist, u, [])
+     #u = Map.drop(u, Map.keys(dead))
+     {%{p | :varu => u}, v}
   end
 
+  defp do_get_vars([], u, acc), do: {u, acc}
+  defp do_get_vars([{_, {:unified, name}} | t], u, acc) do
+    case :maps.get(name, u, :undef) do
+       :undef -> do_get_vars(t, u, acc)
+       var -> do_get_vars(t, Map.delete(u, name), [{name, var}|acc])
+    end
+  end
+  defp do_get_vars([v | t], u, acc), do: do_get_vars(t, u, [v | acc])
+  def set_var(p = %{:vars => vars, :varu => varu}, name, value) do
+      case :maps.get(name, vars, :undef) do
+        {:unified, name} -> %{p | :varu => %{varu | name => value}}
+        :undef -> %{ p | :varu => %{ varu | name => value}}
+        _ -> %{p | :vars => %{vars | name => value}}
+      end
+  end
   # This function does not attempt to GC unused variables in varu
   # the amount of garbage is at most size(vars) at the start of solving anyway
   # should be fine
