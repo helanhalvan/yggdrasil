@@ -1,52 +1,80 @@
 defmodule Setvar do
+  require Record
+
+  Record.defrecord(:setvar,
+    is_fixed: false,
+    minsize: 0,
+    maxsize: :infinity,
+    domain: {0, :infinity},
+    values: %{}
+  )
+
   @behaviour Var
-  def new(v), do: {Intvar, true, v}
-  def new(v, v), do: {Intvar, true, v}
-  def new(min, max), do: {Intvar, false, {min, max}}
-
-  def unify(a = {Intvar, fixed, value}, {Intvar, fixed, value}), do: a
-  def unify(a = {Intvar, true, v}, {Intvar, true, v}), do: a
-  def unify({Intvar, true, _}, {Intvar, true, _}), do: :failed
-  def unify(a = {Intvar, false, _}, b = {Intvar, true, _}), do: unify(b, a)
-
-  def unify(a = {Intvar, true, v}, {Intvar, false, {min, max}}) when min <= v and v <= max do
-    a
+  def new_intset(minsize, maxsize, mindomain, maxdomain) do
+    {Setvar,
+     setvar(
+       minsize: minsize,
+       maxsize: maxsize,
+       domain: {mindomain, maxdomain, []}
+     )}
   end
 
-  def unify({Intvar, true, _}, {Intvar, false, _}) do
-    :failed
+  # removes value from possible values for the set
+  def forbid(value, {Setvar, setvar(domain: d)}) do
+    d = do_forbid(value, d)
+    {Setvar, setvar(domain: d)}
   end
 
-  def unify({Intvar, false, {min, max1}}, {Intvar, false, {min, max2}}) do
-    new(min, min(max1, max2))
+  def possible(value, {Setvar, setvar(domain: d)}) do
+    do_possible(value, d)
   end
 
-  def unify({Intvar, false, {min1, max}}, {Intvar, false, {min2, max}}) do
-    new(max(min1, min2), max)
+  defp do_possible(value, {mindomain, maxdomain, _})
+       when value < mindomain or maxdomain < value do
+    false
   end
 
-  def unify({Intvar, false, {min, _}}, {Intvar, false, {_, max}}) when min > max do
-    :failed
+  defp do_possible(value, {_, _, d}) do
+    do_possible(value, d)
   end
 
-  def unify({Intvar, false, {_, max}}, {Intvar, false, {min, _}}) when min > max do
-    :failed
+  defp do_possible(_value, []), do: true
+  defp do_possible(value, [value]), do: false
+
+  defp do_possible(value, {{_, lowermax, _}, {uppermin, _, _}})
+       when lowermax < value and value < uppermin,
+       do: false
+  defp do_possible(value, {{_, lowermax, d}, _}) when value <= lowermax do
+     do_possible(value, d)
+  end
+  defp do_possible(value, {_, {uppermin, _, d}}) when value >= uppermin do
+     do_possible(value, d)
   end
 
-  def unify({Intvar, false, {min1, max1}}, {Intvar, false, {min2, max2}}) do
-    new(max(min1, min2), min(max1, max2))
+  defp do_forbid(value, d = {mindomain, maxdomain, _})
+       when value < mindomain or maxdomain < value do
+    d
   end
 
-  def is_fixed({Intvar, b, _}), do: b
-  def value_if_fixed({Intvar, true, v}), do: v
-  def value_if_fixed({Intvar, false, _}), do: :undef
-  def interval({Intvar, true, v}), do: {v, v}
-  def interval({Intvar, false, v}), do: v
-  def isin({Intvar, true, v}, v), do: true
-
-  def isin({Intvar, false, {min, max}}, v) when min <= v and v <= max do
-    true
+  defp do_forbid(value, {mindomain, maxdomain, []}) do
+    {mindomain, maxdomain, [value]}
   end
 
-  def isin(_, _), do: false
+  defp do_forbid(value, d = {_mindomain, _maxdomain, [value]}) do
+    d
+  end
+
+  defp do_forbid(new, {mindomain, maxdomain, [old]}) when new + 1 == old do
+    {mindomain, maxdomain, {{mindomain, new - 1, []}, {old + 1, maxdomain, []}}}
+  end
+
+  defp do_forbid(new, {mindomain, maxdomain, [old]}) when old + 1 == new do
+    {mindomain, maxdomain, {{mindomain, old - 1, []}, {new + 1, maxdomain, []}}}
+  end
+
+  def unify(a = {Setvar, v}, {Setvar, v}), do: a
+
+  def is_fixed({Setvar, setvar(is_fixed: b)}), do: b
+  def value_if_fixed({Setvar, v = setvar(is_fixed: true)}), do: v
+  def value_if_fixed({Setvar, setvar(is_fixed: false)}), do: :undefined
 end

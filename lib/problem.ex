@@ -100,8 +100,8 @@ defmodule Problem do
 
     :maps.map(
       fn
-        _key, {:unified, a} -> Intvar.value_if_fixed(:maps.get(a, varu))
-        _key, value -> Intvar.value_if_fixed(value)
+        _key, {:unified, a} -> Var.value_if_fixed(:maps.get(a, varu))
+        _key, value -> Var.value_if_fixed(value)
       end,
       vars
     )

@@ -27,4 +27,15 @@ defmodule SolverTest do
     p = Problem.register_const(p, c)
     {:done, %{^xn => _, ^yn => _, ^zn => _}} = Solution_runner.all_lazy(p)
   end
+  test "setvar forbid" do
+    v = Setvar.new_intset(0, :infinity, 0, 10)
+    v = Setvar.forbid(5, v)
+    v = Setvar.forbid(6, v)
+    for i <- [0,1,2,3,4,7,8,9,10] do
+      true = Setvar.possible(i, v)
+    end
+    for i <- [5,6] do
+      false = Setvar.possible(i, v)
+    end
+  end
 end

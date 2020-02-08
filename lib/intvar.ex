@@ -39,7 +39,7 @@ defmodule Intvar do
 
   def is_fixed({Intvar, b, _}), do: b
   def value_if_fixed({Intvar, true, v}), do: v
-  def value_if_fixed({Intvar, false, _}), do: :undef
+  def value_if_fixed({Intvar, false, _}), do: :undefined
   def interval({Intvar, true, v}), do: {v, v}
   def interval({Intvar, false, v}), do: v
   def isin({Intvar, true, v}, v), do: true
