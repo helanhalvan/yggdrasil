@@ -11,7 +11,7 @@ defmodule Equals do
   defp do_propagate(p, lnames) do
     [h | t] =
       for i <- lnames do
-        Problem.getvar(p, i)
+        Problem.get_var(p, i)
       end
 
     case do_unify(h, t) do
@@ -20,7 +20,7 @@ defmodule Equals do
 
       v ->
         p = Problem.unifyto(p, lnames, v)
-        {:done, p}
+        {p, []}
     end
   end
 

@@ -10,7 +10,7 @@ defmodule Var do
     impl.unify(t1, t2)
   end
   def is_fixed(t) do
-    impl = elem(t, 1)
+    impl = elem(t, 0)
     impl.is_fixed(t)
   end
 end
