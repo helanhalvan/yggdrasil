@@ -3,7 +3,9 @@ defmodule Intvar do
   def new(v), do: {Intvar, true, v}
   def new(v, v), do: {Intvar, true, v}
   def new(min, max), do: {Intvar, false, {min, max}}
-
+  def split({Intvar, false, {min, max}}) do
+    {{Intvar, false, {min, max - 1}}, {Intvar, true, max}}
+  end
   def unify(a = {Intvar, fixed, value}, {Intvar, fixed, value}), do: a
   def unify(a = {Intvar, true, v}, {Intvar, true, v}), do: a
   def unify({Intvar, true, _}, {Intvar, true, _}), do: :failed

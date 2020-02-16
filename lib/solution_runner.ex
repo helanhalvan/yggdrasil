@@ -2,7 +2,6 @@ defmodule Solution_runner do
   def all_lazy(p) do
     case Problem.propagate(p) do
       :no_constraints ->
-        :io.format("~p~n", [p])
         {:done, Problem.solution(p)}
       :failed ->
         :failed
@@ -31,9 +30,9 @@ defmodule Solution_runner do
         do_split(t, p)
 
       false ->
-        {min, max} = Intvar.interval(var)
-        p1 = Problem.set_var(p, name, Intvar.new(min))
-        p2 = Problem.set_var(p, name, Intvar.new(min + 1, max))
+        {v1, v2} = Var.split(var)
+        p1 = Problem.set_var(p, name, v1)
+        p2 = Problem.set_var(p, name, v2)
         {p1, p2}
     end
   end

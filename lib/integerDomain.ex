@@ -38,5 +38,10 @@ defmodule IntegerDomain do
   def unify({min1, max1, d1}, {min2, max2, d2}) do
     {max(min1, min2), min(max1, max2), Map.merge(d1, d2)}
   end
-
+  def min({min, _max, _d}) do
+    min
+  end
+  def max({_min, max, _d}) do
+    max
+  end
 end

@@ -27,15 +27,55 @@ defmodule SolverTest do
     p = Problem.register_const(p, c)
     {:done, %{^xn => _, ^yn => _, ^zn => _}} = Solution_runner.all_lazy(p)
   end
+
   test "setvar forbid" do
-    v = Setvar.new_intset(0, :infinity, 0, 10)
+    v = Setvar.new_intset(10, 0, 10)
     v = Setvar.forbid(5, v)
     v = Setvar.forbid(6, v)
-    for i <- [0,1,2,3,4,7,8,9,10] do
+
+    for i <- [0, 1, 2, 3, 4, 7, 8, 9, 10] do
       true = Setvar.possible(i, v)
     end
-    for i <- [5,6] do
+
+    for i <- [5, 6] do
       false = Setvar.possible(i, v)
     end
+  end
+
+  test "social golfers" do
+    groupsize = 4
+    groups = 1
+    total = groups * groupsize
+
+    vars =
+      for i <- 1..total do
+        v = Setvar.new_intset(4, 1, 8)
+        Setvar.require(i, v)
+      end
+
+    p = Problem.new()
+    {p, vars} = register_all_var(p, vars, [])
+
+    const =
+      for i <- vars, j <- vars, i != j do
+        EqualsOrNooverlap.new([i, j])
+      end
+
+    p = register_all_const(p, const)
+    Solution_runner.all_lazy(p)
+  end
+
+  defp register_all_var(p, [], names), do: {p, names}
+
+  defp register_all_var(p, [h | t], acc) do
+    {p, name} = Problem.register_var(p, h)
+    register_all_var(p, t, [name | acc])
+  end
+
+  defp register_all_const(p, []), do: p
+
+  defp register_all_const(p, [h | t]) do
+    p = Problem.register_const(p, h)
+    register_all_const(p, t)
   end
 end

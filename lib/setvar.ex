@@ -5,8 +5,8 @@ defmodule Setvar do
   Record.defrecord(:setvar,
     is_fixed: false,
     size: 10000,
-    domain: {0, 10000},
-    values: %{}
+    domain: :undefined,
+    values: %MapSet{}
   )
 
   @behaviour Var
@@ -25,7 +25,7 @@ defmodule Setvar do
   end
 
   def require(value, {Setvar, a = setvar(size: size, domain: d, is_fixed: fixed, values: values)}) do
-    case Map.has_key?(values, value) do
+    case MapSet.member?(values, value) do
       true ->
         {Setvar, a}
 
@@ -42,12 +42,22 @@ defmodule Setvar do
               true ->
                 {Setvar,
                  setvar(a,
-                   values: Map.put(values, value, true),
-                   is_fixed: size == Kernel.map_size(values) + 1
+                   values: MapSet.put(values, value),
+                   is_fixed: (size == MapSet.size(values) + 1)
                  )}
             end
         end
     end
+  end
+  def split({Setvar, setvar(is_fixed: true)}) do
+    :failed
+  end
+  def split({Setvar, var = setvar(values: v, size: size, domain: domain)}) do
+    min = IntegerDomain.min(domain)
+    max = IntegerDomain.max(domain)
+    fixed = (size == MapSet.size(v) + 1)
+    { {Setvar, setvar(var, values: MapSet.put(v, min), is_fixed: fixed)},
+      {Setvar, setvar(var, values: MapSet.put(v, max), is_fixed: fixed)} }
   end
 
   def required({Setvar, setvar(values: v)}) do
@@ -64,9 +74,9 @@ defmodule Setvar do
         {Setvar, a = setvar(domain: d1, size: s, values: v1)},
         {Setvar, setvar(domain: d2, size: s, values: v2)}
       ) do
-    v = Map.merge(v1, v2)
+    v = MapSet.union(v1, v2)
 
-    case {Kernel.map_size(v), s} do
+    case {MapSet.size(v), s} do
       {a, b} when a > b -> :failed
       {a, a} -> {Setvar, setvar(a, domain: IntegerDomain.unify(d1, d2), is_fixed: true)}
       {_, _} -> {Setvar, setvar(a, domain: IntegerDomain.unify(d1, d2))}
