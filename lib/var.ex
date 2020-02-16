@@ -2,7 +2,7 @@ defmodule Var do
   # a variable should be implemented as records with the record name being the implementing module
   @type variable :: tuple()
 
-  @callback unify(variable(), variable()) :: variable()
+  @callback unify(variable(), variable()) :: variable() | :failed
   @callback is_fixed(variable()) :: boolean()
   @callback value_if_fixed(variable()) :: term() | :undefined
   def unify(t1, t2) do
