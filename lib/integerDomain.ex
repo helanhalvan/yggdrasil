@@ -1,12 +1,16 @@
 defmodule IntegerDomain do
+  @opaque intdomain() :: {integer(), integer(), %{}} | {}
+  @spec new :: intdomain()
   def new() do
     {0, 10000, %{}}
   end
 
+  @spec new(integer(), integer()) :: intdomain()
   def new(minsize, maxsize) do
     {minsize, maxsize, %{}}
   end
 
+  @spec possible(integer(), intdomain()) :: any
   def possible(value, {min, max, d}) when min <= value and value <= max do
     Map.get(d, value, true)
   end
@@ -32,6 +36,7 @@ defmodule IntegerDomain do
     {mindomain, maxdomain, Map.put(d, value, false)}
   end
 
+  @spec unify(intdomain(), intdomain()) :: {} | intdomain()
   def unify({min1, max1, _}, {min2, max2, _}) when min1 > max2 or min2 > max1 do
     {}
   end

@@ -5,10 +5,12 @@ defmodule Setvar do
   Record.defrecord(:setvar,
     is_fixed: false,
     size: 10000,
-    domain: :undefined,
+    domain: IntegerDomain.new(0, 10000),
     values: %MapSet{}
   )
 
+  @type setvar_int() :: record(:setvar, is_fixed: boolean(), size: integer(), values: %MapSet{})
+  @type setvar() :: {Setvar, setvar_int()}
   @behaviour Var
   def new_intset(size, mindomain, maxdomain) do
     {Setvar,
@@ -43,21 +45,32 @@ defmodule Setvar do
                 {Setvar,
                  setvar(a,
                    values: MapSet.put(values, value),
-                   is_fixed: (size == MapSet.size(values) + 1)
+                   is_fixed: size == MapSet.size(values) + 1
                  )}
             end
         end
     end
   end
+
   def split({Setvar, setvar(is_fixed: true)}) do
     :failed
   end
+
   def split({Setvar, var = setvar(values: v, size: size, domain: domain)}) do
     min = IntegerDomain.min(domain)
     max = IntegerDomain.max(domain)
-    fixed = (size == MapSet.size(v) + 1)
-    { {Setvar, setvar(var, values: MapSet.put(v, min), is_fixed: fixed)},
-      {Setvar, setvar(var, values: MapSet.put(v, max), is_fixed: fixed)} }
+    new = find(min, max, v)
+    fixed = size == MapSet.size(v) + 1
+
+    {{Setvar, setvar(var, values: MapSet.put(v, new), is_fixed: fixed)},
+     {Setvar, setvar(var, values: v, domain: IntegerDomain.forbid(new, domain))}}
+  end
+
+  defp find(curr, max, v) do
+    case MapSet.member?(v, curr) do
+      false -> curr
+      true -> find(curr + 1, max, v)
+    end
   end
 
   def required({Setvar, setvar(values: v)}) do
@@ -68,6 +81,7 @@ defmodule Setvar do
     IntegerDomain.possible(value, d)
   end
 
+  @spec unify(setvar(), setvar()) :: :failed | setvar()
   def unify(a = {Setvar, v}, {Setvar, v}), do: a
 
   def unify(
@@ -77,9 +91,15 @@ defmodule Setvar do
     v = MapSet.union(v1, v2)
 
     case {MapSet.size(v), s} do
-      {a, b} when a > b -> :failed
-      {a, a} -> {Setvar, setvar(a, domain: IntegerDomain.unify(d1, d2), is_fixed: true)}
-      {_, _} -> {Setvar, setvar(a, domain: IntegerDomain.unify(d1, d2))}
+      {a, b} when a > b ->
+        :failed
+
+      {equal, equal} ->
+        domain = IntegerDomain.unify(d1, d2)
+        {Setvar, setvar(a, domain: domain, is_fixed: true, values: v)}
+
+      {_, _} ->
+        {Setvar, setvar(a, domain: IntegerDomain.unify(d1, d2), values: v)}
     end
   end
 

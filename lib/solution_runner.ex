@@ -2,25 +2,27 @@ defmodule Solution_runner do
   def all_lazy(p) do
     case Problem.propagate(p) do
       :no_constraints ->
-        {:done, Problem.solution(p)}
+        {:done, Problem.solution(p), :last}
       :failed ->
         :failed
 
       {:done, p} ->
-        {:done, Problem.solution(p)}
+        {:done, Problem.solution(p), :last}
 
       {:not_done, p} ->
         {a, b} = split(p)
 
         case all_lazy(a) do
           :failed -> all_lazy(b)
-          {:done, p} -> {p, fn -> all_lazy(b) end}
+          {:done, p, :last} -> {:done, p, fn -> all_lazy(b) end}
+          l -> l
         end
     end
   end
 
-  defp split(p) do
-    {p, vlist} = Problem.get_vars(p)
+  @spec split(Problem.problem()) :: {Problem.problem(), Problem.problem()}
+  def split(p) do
+    vlist = Problem.get_vars(p)
     do_split(vlist, p)
   end
 

@@ -12,7 +12,7 @@ defmodule SolverTest do
     {p, zn} = Problem.register_var(p, z)
     c = Equals.new([xn, yn, zn])
     p = Problem.register_const(p, c)
-    {:done, %{^xn => 5, ^yn => 5, ^zn => 5}} = Solution_runner.all_lazy(p)
+    {:done, %{^xn => 5, ^yn => 5, ^zn => 5}, _} = Solution_runner.all_lazy(p)
   end
 
   test "equals problem with many solutions" do
@@ -25,7 +25,7 @@ defmodule SolverTest do
     {p, zn} = Problem.register_var(p, z)
     c = Equals.new([xn, yn, zn])
     p = Problem.register_const(p, c)
-    {:done, %{^xn => _, ^yn => _, ^zn => _}} = Solution_runner.all_lazy(p)
+    {:done, %{^xn => _, ^yn => _, ^zn => _}, _} = Solution_runner.all_lazy(p)
   end
 
   test "setvar forbid" do
@@ -44,12 +44,12 @@ defmodule SolverTest do
 
   test "social golfers" do
     groupsize = 4
-    groups = 1
+    groups = 2
     total = groups * groupsize
 
     vars =
       for i <- 1..total do
-        v = Setvar.new_intset(4, 1, 8)
+        v = Setvar.new_intset(groupsize, 1, total)
         Setvar.require(i, v)
       end
 
@@ -57,12 +57,12 @@ defmodule SolverTest do
     {p, vars} = register_all_var(p, vars, [])
 
     const =
-      for i <- vars, j <- vars, i != j do
+      for i <- vars, j <- vars, i < j do
         EqualsOrNooverlap.new([i, j])
       end
 
     p = register_all_const(p, const)
-    Solution_runner.all_lazy(p)
+    {:done, _, _} = Solution_runner.all_lazy(p)
   end
 
   defp register_all_var(p, [], names), do: {p, names}

@@ -11,15 +11,26 @@ defmodule EqualsOrNooverlap do
       for i <- lnames do
         Problem.get_var(p, i)
       end
+
     case MapSet.disjoint?(Setvar.required(a), Setvar.required(b)) do
       false ->
         case Setvar.unify(a, b) do
-          :failed -> :failed
-          new -> {Problem.unifyto(p, lnames, new), []}
+          :failed ->
+            :failed
+
+          new ->
+            {Problem.unifyto(p, lnames, new), []}
         end
 
       true ->
-        {p, [fn p -> do_propagate(p, lnames) end]}
+        case Setvar.is_fixed(a) and Setvar.is_fixed(b) do
+          true ->
+            {p, []}
+
+          false ->
+            # TODO cannot overlap check here
+            {p, [fn p -> do_propagate(p, lnames) end]}
+        end
     end
   end
 end

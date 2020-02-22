@@ -4,7 +4,7 @@ defmodule Problem do
   @opaque problem :: %{
             :const => [const],
             :vars => %{optional(name) => Var.variable() | {:unified, name}},
-            :varu => %{optional(name) => Var.variable()}
+            :varu => %{optional(name) => {Var.variable(), [name]}}
           }
 
   @spec new :: problem
@@ -59,36 +59,46 @@ defmodule Problem do
   @spec get_var(problem, name) :: any
   def get_var(%{:vars => v, :varu => u}, n) do
     case :maps.get(n, v) do
-      {:unified, uname} -> :maps.get(uname, u)
-      v -> v
+      {:unified, uname} ->
+        {a, _} = :maps.get(uname, u)
+        a
+
+      v ->
+        v
     end
   end
 
-  @spec get_vars(problem) :: {problem, [{name, any}]}
-  def get_vars(p = %{:vars => v, :varu => u}) do
+  @spec get_vars(problem) :: [{name, any}]
+  def get_vars(%{:vars => v, :varu => u}) do
     vlist = Map.to_list(v)
-    {_dead, v} = do_get_vars(vlist, u, [])
-    # u = Map.drop(u, Map.keys(dead))
-    {%{p | :varu => u}, v}
+
+    vlist =
+      :lists.filter(
+        fn
+          {_, {:unified, _}} -> false
+          _ -> true
+        end,
+        vlist
+      )
+
+    ulist = Map.to_list(u)
+    ulist = :lists.map(fn {n, {v, _}} -> {n, v} end, ulist)
+    vlist ++ ulist
   end
-
-  defp do_get_vars([], u, acc), do: {u, acc}
-
-  defp do_get_vars([{_, {:unified, name}} | t], u, acc) do
-    case :maps.get(name, u, :undef) do
-      :undef -> do_get_vars(t, u, acc)
-      var -> do_get_vars(t, Map.delete(u, name), [{name, var} | acc])
-    end
-  end
-
-  defp do_get_vars([v | t], u, acc), do: do_get_vars(t, u, [v | acc])
 
   @spec set_var(problem, name, any) :: problem
   def set_var(p = %{:vars => vars, :varu => varu}, name, value) do
     case :maps.get(name, vars, :undef) do
-      {:unified, name} -> %{p | :varu => %{varu | name => value}}
-      :undef -> %{p | :varu => %{varu | name => value}}
-      _ -> %{p | :vars => %{vars | name => value}}
+      {:unified, name} ->
+        {_, names} = :maps.get(name, varu)
+        %{p | :varu => %{varu | name => {value, names}}}
+
+      :undef ->
+        {_, names} = :maps.get(name, varu)
+        %{p | :varu => %{varu | name => {value, names}}}
+
+      _ ->
+        %{p | :vars => %{vars | name => value}}
     end
   end
 
@@ -100,27 +110,37 @@ defmodule Problem do
 
     :maps.map(
       fn
-        _key, {:unified, a} -> Var.value_if_fixed(:maps.get(a, varu))
-        _key, value -> Var.value_if_fixed(value)
+        _key, {:unified, a} ->
+          {var, _} = :maps.get(a, varu)
+          Var.value_if_fixed(var)
+
+        _key, value ->
+          Var.value_if_fixed(value)
       end,
       vars
     )
   end
 
-  # This function does not attempt to GC unused variables in varu
-  # the amount of garbage is at most size(vars) at the start of solving anyway
-  # should be fine
+  # unfiying already unfied variables is not handled nicely
   @spec unifyto(problem, [name], any) :: problem
   def unifyto(p = %{:vars => vars, :varu => varu}, names, new) do
     uname = make_ref()
     pointer = {:unified, uname}
-    vars1 = set_lots(vars, names, pointer)
-    %{p | :vars => vars1, :varu => Map.put(varu, uname, new)}
+    {vars, varu} = set_all(names, vars, varu, pointer)
+    varu = Map.put(varu, uname, {new, names})
+    %{p | :vars => vars, :varu => varu}
   end
 
-  defp set_lots(map, [], _), do: map
+  defp set_all([], vars, varu, _), do: {vars, varu}
 
-  defp set_lots(map, [h | t], v) do
-    set_lots(%{map | h => v}, t, v)
+  defp set_all([h | t], vars, varu, pointer) do
+    case Map.get(vars, h, :undef) do
+      :undef ->
+        case :maps.take(h, varu) do
+          {{_, names}, varu} ->
+            set_all(names ++ t, vars, varu, pointer)
+        end
+      _ -> set_all(t, %{vars | h => pointer }, varu, pointer)
+    end
   end
 end
