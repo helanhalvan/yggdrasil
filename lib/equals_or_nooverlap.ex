@@ -12,9 +12,9 @@ defmodule EqualsOrNooverlap do
         Problem.get_var(p, i)
       end
 
-    case MapSet.disjoint?(Setvar.required(a), Setvar.required(b)) do
+    case :setvar.disjoint(a,b) do
       false ->
-        case Setvar.unify(a, b) do
+        case :setvar.unify(a, b) do
           :failed ->
             :failed
 
@@ -23,7 +23,7 @@ defmodule EqualsOrNooverlap do
         end
 
       true ->
-        case Setvar.is_fixed(a) and Setvar.is_fixed(b) do
+        case :setvar.is_fixed(a) and :setvar.is_fixed(b) do
           true ->
             {p, []}
 

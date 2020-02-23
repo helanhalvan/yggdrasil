@@ -1,5 +1,5 @@
 defmodule IntegerDomain do
-  @opaque intdomain() :: {integer(), integer(), %{}} | {}
+  @type intdomain() :: {integer(), integer(), %{}} | {}
   @spec new :: intdomain()
   def new() do
     {0, 10000, %{}}

@@ -1,7 +1,7 @@
 defmodule Problem do
   @type const :: (problem -> :failed | {problem, [const]})
-  @opaque name :: reference()
-  @opaque problem :: %{
+  @type name :: reference()
+  @type problem :: %{
             :const => [const],
             :vars => %{optional(name) => Var.variable() | {:unified, name}},
             :varu => %{optional(name) => {Var.variable(), [name]}}
@@ -18,9 +18,23 @@ defmodule Problem do
     {%{p | :vars => Map.put(v, name, new)}, name}
   end
 
-  @spec register_const(problem, any) :: problem
+  @spec register_vars(problem(), [Var.variable()]) :: {problem(), [name]}
+  def register_vars(p, vars), do: register_vars(p, vars, [])
+  defp register_vars(p, [], names), do: {p, names}
+
+  defp register_vars(p, [h | t], acc) do
+    {p, name} = Problem.register_var(p, h)
+    register_vars(p, t, [name | acc])
+  end
+
+  @spec register_const(problem, any) :: problem()
   def register_const(p = %{:const => l}, n) do
     %{p | :const => [n | l]}
+  end
+
+  @spec register_consts(problem, [const]) :: problem()
+  def register_consts(p = %{:const => old}, new) do
+    %{p | :const => old ++ new}
   end
 
   @spec propagate(problem) ::

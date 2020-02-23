@@ -1,4 +1,8 @@
 defmodule Solution_runner do
+  @spec all_lazy(Problem.problem()) ::
+          :failed
+          | {:done, Problem.problem(),
+             :last | (() -> :failed | {:done, Problem.problem(), any})}
   def all_lazy(p) do
     case Problem.propagate(p) do
       :no_constraints ->
